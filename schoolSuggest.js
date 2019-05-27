@@ -1,65 +1,57 @@
-$(function () {
-    "use strict";
     // 学校名サジェスト
     class SchoolSuggest {
         constructor() {
             this.dataList = [];
-            this.schoolData = {};
-            this.shapedDataList = [];
-            this.shapedDataIsEmpty = true;
+            this.dataListIsEmpty = true;
             this.init();
         }
         init(){
-            this.$seachSchool = $('[name="keyword"]');
-            this.getSchoolDataList();
+            this.$seachSchool = $('.searchPanelFreeWord__inputSearch');
             this.bindEvent();
         }
 
         // 全件データを取得
         getSchoolDataList(){
             $.ajax({
-                url: './js/data.json'
+                url: '/smp/fwSuggest/gakkoNmSearch/',
+                type: 'POST',
+                data: {
+                    keyword: $('[name="keyword"]').val()
+                }
             }).then((data)=>{
-                this.dataList = data.data;
+                const dataList = JSON.parse(data);
+                this.dataList = dataList.data;
+
+                console.log(this.dataList);
+                
             })
         }
 
-        getShapedDataList(searchKey){
-            // 検索欄が空白の時はnull
-			if (searchKey === '') {
-                searchKey = null;
-            }
-            if (this.shapedDataIsEmpty) {
-                for (let i = 0; i < this.dataList.length; i++) {
-                    const gakkoHiraganaNm = this.dataList[i].gakkoHiraganaNm,
-                    gakkoNm = this.dataList[i].gakkoNm;
-                    
-                    if (gakkoHiraganaNm.indexOf(searchKey) === 0 || gakkoNm.indexOf(searchKey) === 0 ) {
-                        this.schoolData = {
-                            dispLocationNm: this.dataList[i].dispLocationNm,
-                            gakkoCd: this.dataList[i].gakkoCd,
-                            gakkoNm: this.dataList[i].gakkoNm,
-                            gakkoHiraganaNm: this.dataList[i].gakkoHiraganaNm,
-                            koshuCategoryMNm: this.dataList[i].koshuCategoryMNm
-                        }
-                        this.shapedDataList.push(this.schoolData);
-                    }
-                }
-            }
-        }
-        
         createSchoolList() {
-            if(this.shapedDataIsEmpty){
+            if(this.dataListIsEmpty){
                 $('.schoolList').show();
-                for (let i = 0; i < this.shapedDataList.length; i++) {
-                    $('.schoolList').append(`
-                        <li class="schoolList__item">
-                            <a href="http://shingakunet.com/gakko/${this.shapedDataList[i].gakkoCd}" class="schoolList__link" target="_blank">
-                                <span class="schoolList__name">${this.shapedDataList[i].gakkoNm}</span>
-                                <span class="schoolList__info">${this.shapedDataList[i].koshuCategoryMNm} / ${this.shapedDataList[i].dispLocationNm}</span>
-                            </a>
-                        </li>
-                    `)
+                for (let i = 0; i < this.dataList.length; i++) {
+                    // 「専門職大学」ありの場合
+                    if(this.dataList[i].semmonshokuKbn !== null){
+                        $('.schoolList').append(`
+                            <li class="schoolList__item">
+                                <a href="http://shingakunet.com/gakko/${this.dataList[i].gakkoCd}" class="schoolList__link" target="_blank">
+                                    <span class="schoolList__name">${this.dataList[i].gakkoNm}</span>
+                                    <span class="schoolList__info">専門職大学・専門職短期大学 / ${this.dataList[i].koshuCategoryMNm} / ${this.dataList[i].dispLocationNm}</span>
+                                </a>
+                            </li>
+                        `)
+                    // 「専門職大学」なしの場合
+                    } else {
+                        $('.schoolList').append(`
+                            <li class="schoolList__item">
+                                <a href="http://shingakunet.com/gakko/${this.dataList[i].gakkoCd}" class="schoolList__link" target="_blank">
+                                    <span class="schoolList__name">${this.dataList[i].gakkoNm}</span>
+                                    <span class="schoolList__info">${this.dataList[i].koshuCategoryMNm} / ${this.dataList[i].dispLocationNm}</span>
+                                </a>
+                            </li>
+                        `)
+                    }
                 }
             }
         }
@@ -71,35 +63,44 @@ $(function () {
 
         setInputKeyword() {
             const setKeyword = $(this).find('span').text();
-            console.log(setKeyword);
             this.$seachSchool.val(setKeyword);
         }
 
         shapedDataListFlag() {
-            if(!this.shapedDataList.length){
-                this.shapedDataIsEmpty = true;
-            } else {
-                this.shapedDataIsEmpty = false;
-            }
+            this.dataListIsEmpty = !this.dataListIsEmpty;
+        }
+
+        sendLogFwSearch() {
+            const s2 = s_gi(s_account);
+            // クリックログ送信
+            s2.tl(this, 'o', 'header_FW_search');
+        }
+
+        sendLogFwDone() {
+            const s2 = s_gi(s_account);
+            // クリックログ送信
+            s2.tl(this, 'o', 'header_FW_done');
         }
 
         bindEvent(){
             this.$seachSchool.on('keyup',(e)=>{
                 const searchKey = $(e.target).val();
-                this.getShapedDataList(searchKey);
+                console.log(searchKey);
+                this.getSchoolDataList();
+                console.log(this.dataList);
+                
                 this.createSchoolList();
                 if(!searchKey.length){
                     this.deleteSchoolList();
-                    this.shapedDataList = [];
+                    this.dataList = [];
                 }
                 this.shapedDataListFlag();
+                this.sendLogFwSearch();
             });
 
-            $(document).on('click','.schoolList__link', ()=>{
-                this.$seachSchool.val($(e.target).find('.schoolList__name').text().trim());
-                this.setInputKeyword();
-            });            
+            $(document).on('click','.schoolList__link', ()=>{                
+                this.sendLogFwDone();
+            });
         }
     }
     new SchoolSuggest();
-});

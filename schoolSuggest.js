@@ -97,8 +97,9 @@
                 this.shapedDataListFlag();
                 this.sendLogFwSearch();
             });
-
-            $(document).on('click','.schoolList__link', ()=>{                
+            $(document).on('click','.schoolList__item', (e)=>{
+                const searchWord = $(e.target).find('.schoolList__name').text();
+                this.$seachSchool.val(searchWord);
                 this.sendLogFwDone();
             });
         }

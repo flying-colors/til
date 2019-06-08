@@ -24,10 +24,11 @@ $(function () {
         // 前画面で入力済みの資料コードをリストに追加
         pushAddedShiryoCd() {
             const addedShiryoCd = $('[name="addedShiryoCd"]').val();
+            // 入力済みの資料コードが複数（カンマ区切り）の場合は配列化
             const arrAddedShiryoCd = addedShiryoCd !== ""  ? addedShiryoCd.split(',')  : '';
             if(addedShiryoCd !== ''){
-                arrAddedShiryoCd.forEach((value)=>{
-                    this.allShiryoCdList.push(value);
+                arrAddedShiryoCd.forEach((shiryoCd)=>{
+                    this.allShiryoCdList.push(shiryoCd);
                 });
             }
         }
@@ -35,7 +36,7 @@ $(function () {
         pushInputShiryoCd() {
             $('[data-shiryocd]').each((index,elm)=>{
                 const shiryoCd = $(elm).data('shiryocd').toString();
-                // 有料校を除外
+                // キャンペーン対象外（有料）を除外
                 if($(elm).data('yuryoflag') === 0){
                     this.allShiryoCdList.push(shiryoCd);
                 }
@@ -43,7 +44,7 @@ $(function () {
         }
         // プレゼントに必要な応募校数を計算
         calcRemainNum() {
-            // 全資料コードリストの重複を削除
+            // 全資料コードリスト内の重複を削除
             const setShiryoCd = new Set(this.allShiryoCdList);
             this.countRemainNum -= setShiryoCd.size;
         }

@@ -25,7 +25,7 @@ $(function () {
         pushAddedShiryoCd() {
             const addedShiryoCd = $('[name="addedShiryoCd"]').val();
             // 入力済みの資料コードが複数（カンマ区切り）の場合は配列化
-            const arrAddedShiryoCd = addedShiryoCd !== ""  ? addedShiryoCd.split(',')  : '';
+            const arrAddedShiryoCd = addedShiryoCd !== ''  ? addedShiryoCd.split(',')  : '';
             if(addedShiryoCd !== ''){
                 arrAddedShiryoCd.forEach((shiryoCd)=>{
                     this.allShiryoCdList.push(shiryoCd);

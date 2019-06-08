@@ -8,19 +8,13 @@ $(function () {
         }
         // 初期化
         init() {
-            this.setPopup();
             this.pushAddedShiryoCd();
             this.pushInputShiryoCd();
             this.calcRemainNum();
             this.updateRemainNum();
+            this.setPopup();
             this.bindEvent();
         }
-        // カウントダウン文言を表示
-        setPopup(){
-            if($('.output').length){
-                $('.popup').show().insertAfter('.output:last');
-            }
-        };
         // 前画面で入力済みの資料コードをリストに追加
         pushAddedShiryoCd() {
             const addedShiryoCd = $('[name="addedShiryoCd"]').val();
@@ -56,6 +50,12 @@ $(function () {
                 $('.js-countDown').text('0');
                 $('.popup').addClass('is-full');
                 return false;
+            }
+        };
+        // カウントダウン文言を表示
+        setPopup(){
+            if($('.output').length){
+                $('.popup').show().insertAfter('.output:last');
             }
         };
         // イベントをバインド

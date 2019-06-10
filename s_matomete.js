@@ -67,40 +67,63 @@ $(function () {
 
 	// チェックした学校をカートから削除する
 	$(document).on('click', '[data-action="deleteMatometeListAll"]', function () {
+
+		// クリックログ送信
 		var s2 = s_gi(s_account);
 		s2.tl(this, 'o', 'Smatome_list_delete');
-		$.ajax({
-			url: '/smp2/cart/list/deleteClip'
-		})
 
 		// チェックした学校のみ削除
-		$('.js-schoolSelect').each(function(){
-			if($(this).find('[data-type="school"]').prop('checked')){
-				$(this).remove();
+		let checkCount = 0;
+		const checkDeleteSchoolList = [];
+		$('.js-schoolSelect').each((index,elm)=>{
+			if($(elm).find('[data-type="school"]').prop('checked')){
+				checkCount++;
+				let checkDeleteSchoolCode = $(elm).find('[data-type="school"]').data('code').toString(),
+				addObj = {
+					name: "cartDeleteRootProductCd",
+					value: checkDeleteSchoolCode
+				}
+				checkDeleteSchoolList.push(addObj);
 			}
 		});
-
-		setAddCartBtnState();
-		checkGanshoAri();
-		setSchoolSelectNum(10);
-		// カート0件表示
-		if(!$('.js-schoolSelect').length){
-			$('.js-caution').remove();
-			// $('[data-cart="button"]').removeClass('is-added is-disabled');
-			$(this).closest('.schoolCartList__delete').remove();
-			$('.schoolCartList').before(`
-				<div class="schoolCartList is-empty">
-					<div class="schoolCartList__message">現在資料請求カートに学校はありません。<br>
-					<span class="schoolCartList__messageSub">資料請求カートは、最大20校追加可能です。</span></div>
-					<a href="/smp/" class="schoolCartList__btnLink" onclick="var s2=s_gi(s_account);s2.tl(this,'o','Smatome_search_top_0hit')">学校探しを続ける（進路トップへ）</a>
-				</div>
-			`)
-			$('.messageArea').hide();
+		
+		if(checkCount === 0){
+			return false;
 		}
-		$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
+		$.ajax({
+			url: '/smp2/cart/list/deleteClip',
+			type: 'POST',
+			data: checkDeleteSchoolList,
+			traditional: true
+		})
+		.done( () =>{
+			$('.js-schoolSelect').each((index,elm)=>{
+				if($(elm).find('[data-type="school"]').prop('checked')){
+					$(elm).remove();
+				}
+			});
+			checkGanshoAri();
+			setSchoolSelectNum(10);
+			// カート0件表示
+			if(!$('.js-schoolSelect').length){
+				$('.js-caution').remove();
+				$(this).closest('.schoolCartList__delete').remove();
+				$('.schoolCartList').before(`
+					<div class="schoolCartList is-empty">
+						<div class="schoolCartList__message">現在資料請求カートに学校はありません。<br>
+						<span class="schoolCartList__messageSub">資料請求カートは、最大20校追加可能です。</span></div>
+						<a href="/smp/" class="schoolCartList__btnLink" onclick="var s2=s_gi(s_account);s2.tl(this,'o','Smatome_search_top_0hit')">学校探しを続ける（進路トップへ）</a>
+					</div>
+				`)
+				$('.messageArea').hide();
+			}
+			$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
+		})
+		.fail( () => {
+		})
 	});
 
-	$('[data-type="school"]').bind('click', function () {
+	$(document).bind('click', '[data-type="school"]', function () {
 		$('[data-type="selectSchoolCount"]').each(function () {
 			$(this).text(getCheckCount());
 		})
@@ -284,7 +307,7 @@ $(function () {
 				</a>
 				<div class="actionGroupe__body">
 					<div class="actionGroupe__selectSchoolCount">
-						<span class="actionGroupe__selectSchoolCountNum" data-type="selectSchoolCount"></span>校選択中
+						<span class="actionGroupe__selectSchoolCountNum" data-type="selectSchoolCount"></span>あ校選択中
 					</div>
 				</div>
 			</div>`
@@ -327,186 +350,240 @@ $(function () {
 		}));
 	}
 
+	// ***QA no40*** 
+	// カート追加API処理中か判定フラグ
+	let isAddClipProcessing = false;
+
 	// 「資料請求カート」ボタン押下時の処理（カートへ追加）
 	$('.js-addSchool').on('click', (e)=> {
 		e.preventDefault();
 
-		$.ajax({
-			url: '/smp2/cart/list/addClip',
-			type: 'POST',
-			dataType: 'json'
-		}).then((data) =>{
-			console.log(data.cartAddOverFlag);
-			if(data.cartAddOverFlag){
-				return false;
-			} else {
-				$.ajax({
-					url: '/smp2/cart/list/addClip',
-					type: 'POST',
-					dataType: 'json'
-				}).then(
-				(data) => {
-					const cartAddOverFlag = data.cartAddOverFlag,
-						freeGanshoAriFlag = data.freeGanshoAriFlag,
-						freePamphAriFlag = data.freePamphAriFlag,
-						gakkoCd = data.gakkoCd,
-						gakkoNm = data.gakkoNm,
-						gakkoPhoto = data.gakkoPhoto,
-						ganshoFlag = data.ganshoFlag,
-						koshuNm = data.koshuNm,
-						pamphFlag = data.pamphFlag,
-						rootProductCd = data.rootProductCd,
-						todofukenRnm = data.todofukenRnm;
-					
-					// 無料の場合
-					if(freePamphAriFlag){
-						$('.schoolCartList').append(`
-						<li class="schoolCartList__school js-schoolSelect is-selected">
-							<label class="schoolCartList__item">
-								<div class="schoolCartList__checkbox">
-									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
-										data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
-									<span class="schoolCartList__checkboxIcon"></span>
-								</div>
-								<div class="schoolCartList__schoolInfo">
-									<span class="schoolCartList__schoolName">
-										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
-									</span>
-									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
-								</div>
-								<div class="schoolCartList__schoolPhoto">
-									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
-										<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
-									</a>
-								</div>
-							</label>
-						</li>`);
-					}
-					// 無料且つ願書あり
-					if(freeGanshoAriFlag){
-						$('.schoolCartList').append(`
-						<li class="schoolCartList__school js-schoolSelect is-selected">
-							<label class="schoolCartList__item">
-								<div class="schoolCartList__checkbox">
-									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
-										data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
-									<span class="schoolCartList__checkboxIcon"></span>
-								</div>
-								<div class="schoolCartList__schoolInfo">
-									<span class="schoolCartList__schoolName">
-										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
-									</span>
-									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
-									<span class="schoolCartList__labelGansho">願書あり</span>
-								</div>
-								<div class="schoolCartList__schoolPhoto">
-									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
-										<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
-									</a>
-								</div>
-							</label>
-						</li>`);
-					}
-					// 有料（キャンペーン対象外）
-					if(!freePamphAriFlag){
-						$('.schoolCartList').append(`
-						<li class="schoolCartList__school js-schoolSelect is-selected">
-							<label class="schoolCartList__item">
-								<div class="schoolCartList__checkbox">
-									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
-										data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
-									<span class="schoolCartList__checkboxIcon"></span>
-								</div>
-								<div class="schoolCartList__schoolInfo">
-									<span class="schoolCartList__schoolName">
-										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
-									</span>
-									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
-									<span class="schoolCartList__labelNoCampaign">キャンペーン対象外</span>
-								</div>
-								<div class="schoolCartList__schoolPhoto">
-									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
-										<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
-									</a>
-								</div>
-							</label>
-						</li>`);
-					}
-					// 有料（キャンペーン対象外）且つ願書あり
-					if(!freePamphAriFlag && ganshoFlag){
-						$('.schoolCartList').append(`
-						<li class="schoolCartList__school js-schoolSelect is-selected">
-							<label class="schoolCartList__item">
-								<div class="schoolCartList__checkbox">
-									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
-										data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
-									<span class="schoolCartList__checkboxIcon"></span>
-								</div>
-								<div class="schoolCartList__schoolInfo">
-									<span class="schoolCartList__schoolName">
-										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
-									</span>
-									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
-									<span class="schoolCartList__labelGansho">願書あり</span>
-									<span class="schoolCartList__labelNoCampaign">キャンペーン対象外</span>
-								</div>
-								<div class="schoolCartList__schoolPhoto">
-									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
-										<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
-									</a>
-								</div>
-							</label>
-						</li>`);
-					}
-				});
-		
-				// カート0件時の内容を削除
-				$(e.target).parent('div').addClass('is-added');
-				$('.is-empty').remove();
-		
-				// カートが0件の場合は注意文言を表示
-				if(!$('.js-schoolSelect').length){
-					$('.pageListTitle').after(`
-					<div class="caution js-caution">
-						<span class="caution__text">カートに追加できるのは最大20件です</span>
-					</div>
-					`);
-				}
-		
-				// 「チェックした学校をカートから削除する」を表示
-				if(!$('.schoolCartList__delete').length){
-					$('[name="history"]').after(`
-						<div class="schoolCartList__delete">
-							<a href="#" data-action="deleteMatometeListAll">チェックした学校をカートから削除する</a>
-						</div>`);
-				}
-		
-				// カートが0件の場合はアクションボタンを生成
-				if(!$('.actionGroupe').length){
-					actionBtnDefault();
-					$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
-					setSchoolSelectNum(10);
-				}
-		
-				// 選択された学校数をカウント
-				getCheckCountNew();
-				$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
-		
-				// キャンペーンのカウント
-				setSchoolSelectNum(10);
-		
-				// ボタンを変更
-				setAddCartBtnState();
-			}
-		});
+		// ***QA no40*** 
+		// 最近チェックした学校・レコメンドからの資料請求カート追加時、
+		// 既にまとめてリストに追加済みの学校の場合は何もしないようにする。
 
-		// カートが20件の場合は注意文言（吹き出し）を表示（追加機能は無効）
-		if($(e.target).parent('div').hasClass('is-disabled')){
-			alertCartFull(e);
+		// カート追加API処理中の場合は何もしない
+		if(isAddClipProcessing === true) {
 			return false;
 		}
 
+		// これからまとめてリストに追加しようとしているproductCode取得
+		const addCode = $(e.currentTarget).data('rootproductcd');
+		// まとめてリストのproductCode取得
+		let selectedCode = [];
+		$('.js-schoolSelect').each((i, element) => {
+			selectedCode.push($(element).find('.js-changeSelect').data('code'));
+		});
+		// これから追加しようとしているproductCodeが既にまとめてリストに存在している場合は何もしない
+		if(selectedCode.indexOf(addCode) >= 0) {
+			return false;
+		}
 
+		// カート追加API処理中フラグをON
+		isAddClipProcessing = true;
+
+		$.ajax({
+			url: '/smp2/cart/list/addClip',
+			type: 'POST',
+			dataType: 'json',
+			data:{
+				rootProductCd: $(e.target).data('rootproductcd')
+			}
+		}).done((data) =>{
+			// 注意文言（吹き出し）を表示（追加機能は無効）
+			let countCart = 0;
+			$('.js-schoolSelect').each(()=> {
+				countCart++;
+			});
+
+			// カートが20件の時（画面・DB）は操作不可
+			if (countCart >= 20 || data.cartAddOverFlag === '1') {
+				alertCartFull(e);
+				// ***QA no40*** 
+				// カート追加API処理中フラグをOFF
+				isAddClipProcessing = false;
+				return false;
+			} else {
+
+			// カート0件時の内容を削除
+			$(e.target).parent('div').addClass('is-added');
+			$('.is-empty').remove();
+
+			// カートが0件の場合は注意文言を表示
+			if(!$('.js-schoolSelect').length){
+				$('.pageListTitle').after(`
+				<div class="caution js-caution">
+					<span class="caution__text">カートに追加できるのは最大20件です</span>
+				</div>
+				`);
+			}
+
+			// 「チェックした学校をカートから削除する」を表示
+			if(!$('.schoolCartList__delete').length){
+				$('[name="history"]').after(`
+					<div class="schoolCartList__delete">
+						<a href="#" data-action="deleteMatometeListAll">チェックした学校をカートから削除する</a>
+					</div>`);
+			}
+
+			const 
+				freePamphAriFlag = data.freePamphAriFlag,
+				freeGanshoAriFlag = data.freeGanshoAriFlag,
+				gakkoCd = data.gakkoCd,
+				gakkoNm = data.gakkoNm,
+				gakkoPhoto = data.gakkoPhoto,
+				koshuNm = data.koshuNm,
+				rootProductCd = data.rootProductCd,
+				pamphFlag = data.pamphFlag,
+				ganshoFlag = data.ganshoFlag,
+				todofukenRnm = data.todofukenRnm;
+
+				// パンフなし＆願書なし（「チェックボックス」なし＆「キャンペーン対象外」表示なし＆「願書あり」表示なし）
+				if(pamphFlag === "0" && ganshoFlag === "0"){
+					$('.schoolCartList').append(`
+						<li class="schoolCartList__school js-schoolSelect is-selected">
+						<label class="schoolCartList__item">
+							<div class="schoolCartList__checkbox"></div>
+							<div class="schoolCartList__schoolInfo">
+							<span class="schoolCartList__schoolName">
+								<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
+							</span>
+							<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
+							</div>
+							<div class="schoolCartList__schoolPhoto">
+							<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
+								<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
+							</a>
+							</div>
+						</label>
+						</li>`);
+					} else {
+						//「キャンペーン対象外」表示なし＆「願書あり」表示あり
+						if((freePamphAriFlag || freeGanshoAriFlag ) && ganshoFlag === "1"){
+							$('.schoolCartList').append(`
+								<li class="schoolCartList__school js-schoolSelect is-selected">
+									<label class="schoolCartList__item">
+									<div class="schoolCartList__checkbox">
+										<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
+										data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
+										<span class="schoolCartList__checkboxIcon"></span>
+									</div>
+									<div class="schoolCartList__schoolInfo">
+										<span class="schoolCartList__schoolName">
+										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
+										</span>
+										<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
+										<span class="schoolCartList__labelGansho">願書あり</span>
+									</div>
+									<div class="schoolCartList__schoolPhoto">
+										<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
+										<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
+										</a>
+									</div>
+									</label>
+								</li>`);
+							}
+						//「キャンペーン対象外」表示なし＆「願書あり」表示なし
+						if((freePamphAriFlag || freeGanshoAriFlag ) && ganshoFlag === "0"){
+							$('.schoolCartList').append(`
+							<li class="schoolCartList__school js-schoolSelect is-selected">
+								<label class="schoolCartList__item">
+								<div class="schoolCartList__checkbox">
+									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
+									data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
+									<span class="schoolCartList__checkboxIcon"></span>
+								</div>
+								<div class="schoolCartList__schoolInfo">
+									<span class="schoolCartList__schoolName">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
+									</span>
+									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
+								</div>
+								<div class="schoolCartList__schoolPhoto">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
+									<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
+									</a>
+								</div>
+								</label>
+							</li>`);
+						}
+						//「キャンペーン対象外」表示あり＆「願書あり」表示なし
+						if((!freePamphAriFlag && !freeGanshoAriFlag ) && ganshoFlag === "0"){
+							$('.schoolCartList').append(`
+							<li class="schoolCartList__school js-schoolSelect is-selected">
+								<label class="schoolCartList__item">
+								<div class="schoolCartList__checkbox">
+									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
+									data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
+									<span class="schoolCartList__checkboxIcon"></span>
+								</div>
+								<div class="schoolCartList__schoolInfo">
+									<span class="schoolCartList__schoolName">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
+									</span>
+									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
+									<span class="schoolCartList__labelNoCampaign">キャンペーン対象外</span>
+								</div>
+								<div class="schoolCartList__schoolPhoto">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
+									<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
+									</a>
+								</div>
+								</label>
+							</li>`);
+						}
+						//「キャンペーン対象外」表示あり＆「願書あり」表示あり
+						if((!freePamphAriFlag && !freeGanshoAriFlag ) && ganshoFlag === "1"){
+							$('.schoolCartList').append(`
+							<li class="schoolCartList__school js-schoolSelect is-selected">
+								<label class="schoolCartList__item">
+								<div class="schoolCartList__checkbox">
+									<input type="checkbox" name="gakkoCd" value="${gakkoCd}" data-hasgansyo="false" data-haspanph="true"
+									data-type="school" class="schoolCartList__inputCheckbox js-changeSelect" data-listtype="cart" data-code="${rootProductCd}" checked>
+									<span class="schoolCartList__checkboxIcon"></span>
+								</div>
+								<div class="schoolCartList__schoolInfo">
+									<span class="schoolCartList__schoolName">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">${gakkoNm}</a>
+									</span>
+									<div class="schoolCartList__schoolKind">${koshuNm}／${todofukenRnm}</div>
+									<span class="schoolCartList__labelGansho">願書あり</span>
+									<span class="schoolCartList__labelNoCampaign">キャンペーン対象外</span>
+								</div>
+								<div class="schoolCartList__schoolPhoto">
+									<a href="/smp/gakko/top/${gakkoCd}" target="_blank">
+									<img src="/school/${rootProductCd}/images/${gakkoPhoto}" height="49" alt="" width="71">
+									</a>
+								</div>
+								</label>
+							</li>`);
+						}
+					}
+				}
+				// 選択された学校数をカウント
+				getCheckCountNew();
+				$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
+
+				// キャンペーンのカウント
+				setSchoolSelectNum(10);
+
+				// ボタンを「追加済み」に変更
+				setAddCartBtnState();
+
+				// ***QA no40*** 
+				// カート追加API処理中フラグをOFF
+				isAddClipProcessing = false;
+			}).fail(() => {
+				// ***QA no40*** 
+				// エラーが返ってきた際、カート追加API処理中フラグをOFF
+				isAddClipProcessing = false;
+			});
+		// カートが0件の場合はアクションボタンを生成
+		if(!$('.actionGroupe').length){
+			actionBtnDefault();
+			$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
+			setSchoolSelectNum(10);
+		}
 	});
 
 	getCheckCountNew();
@@ -577,6 +654,11 @@ $(function () {
 		bindEvents() {
 			// モーダルを開く
 			$(document).on('click', '[data-open-shiryoselect-modal=trigger]', (e) => {
+				// ***QA no39*** 
+				// ボタンが非活性状態の場合は何もしない
+				if($(e.currentTarget).hasClass('matometeButtonBox__panph--disabled')) {
+					return false;
+				}
 				e.preventDefault();
 				this.openModal();
 			});

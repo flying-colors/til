@@ -65,12 +65,23 @@ $(function () {
 		return false;
 	})
 
+	// カート追加API処理中か判定フラグ
+	let isDeleteClipProcessing = false;
+
 	// チェックした学校をカートから削除する
 	$(document).on('click', '[data-action="deleteMatometeListAll"]', function () {
+
+		// 吸着の吹き出しを非表示
+		deleteCartAddOver();
 
 		// クリックログ送信
 		var s2 = s_gi(s_account);
 		s2.tl(this, 'o', 'Smatome_list_delete');
+
+		// カート削除API処理中の場合は何もしない
+		if(isDeleteClipProcessing === true) {
+			return false;
+		}
 
 		// チェックした学校のみ削除
 		let checkCount = 0;
@@ -90,18 +101,21 @@ $(function () {
 		if(checkCount === 0){
 			return false;
 		}
+		// カート削除API処理中フラグをON
+		isDeleteClipProcessing = true;
+
 		$.ajax({
 			url: '/smp2/cart/list/deleteClip',
 			type: 'POST',
 			data: checkDeleteSchoolList,
 			traditional: true
-		})
-		.done( () =>{
+		}).done( () =>{
 			$('.js-schoolSelect').each((index,elm)=>{
 				if($(elm).find('[data-type="school"]').prop('checked')){
 					$(elm).remove();
 				}
 			});
+			// 「願書あり」なら注意文言表示
 			checkGanshoAri();
 			setSchoolSelectNum(10);
 			// カート0件表示
@@ -118,9 +132,12 @@ $(function () {
 				$('.messageArea').hide();
 			}
 			$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
-		})
-		.fail( () => {
-		})
+			// カート削除API処理中フラグをOFF
+			isDeleteClipProcessing = false;
+		}).fail( () => {
+			// エラーが返ってきた際、カート削除API処理中フラグをOFF
+			isDeleteClipProcessing = false;
+		});
 	});
 
 	$(document).bind('click', '[data-type="school"]', function () {
@@ -307,9 +324,10 @@ $(function () {
 				</a>
 				<div class="actionGroupe__body">
 					<div class="actionGroupe__selectSchoolCount">
-						<span class="actionGroupe__selectSchoolCountNum" data-type="selectSchoolCount"></span>あ校選択中
+						<span class="actionGroupe__selectSchoolCountNum" data-type="selectSchoolCount"></span>校選択中
 					</div>
 				</div>
+				<span class="actionGroupe__balloon js-overFlow">一度に資料請求できるのは20校までです。</span>
 			</div>`
 		));
 		// フッターロゴ表示用
@@ -350,18 +368,25 @@ $(function () {
 		}));
 	}
 
-	// ***QA no40*** 
 	// カート追加API処理中か判定フラグ
 	let isAddClipProcessing = false;
 
 	// 「資料請求カート」ボタン押下時の処理（カートへ追加）
 	$('.js-addSchool').on('click', (e)=> {
 		e.preventDefault();
+		
+		let countCart = 0;
+		countCart = $('.js-schoolSelect').length;
 
-		// ***QA no40*** 
+		// 注意文言（吹き出し）を表示（追加機能は無効）
+		// カートが20件の時（画面）は操作不可
+		if (countCart >= 20) {
+			alertCartFull(e);
+			return false;
+		}
+
 		// 最近チェックした学校・レコメンドからの資料請求カート追加時、
 		// 既にまとめてリストに追加済みの学校の場合は何もしないようにする。
-
 		// カート追加API処理中の場合は何もしない
 		if(isAddClipProcessing === true) {
 			return false;
@@ -390,20 +415,14 @@ $(function () {
 				rootProductCd: $(e.target).data('rootproductcd')
 			}
 		}).done((data) =>{
-			// 注意文言（吹き出し）を表示（追加機能は無効）
-			let countCart = 0;
-			$('.js-schoolSelect').each(()=> {
-				countCart++;
-			});
 
-			// カートが20件の時（画面・DB）は操作不可
-			if (countCart >= 20 || data.cartAddOverFlag === '1') {
+			// カートが20件の時（DB）は操作不可
+			if (data.cartAddOverFlag === '1') {
 				alertCartFull(e);
-				// ***QA no40*** 
 				// カート追加API処理中フラグをOFF
 				isAddClipProcessing = false;
 				return false;
-			} else {
+			}
 
 			// カート0件時の内容を削除
 			$(e.target).parent('div').addClass('is-added');
@@ -559,7 +578,6 @@ $(function () {
 							</li>`);
 						}
 					}
-				}
 				// 選択された学校数をカウント
 				getCheckCountNew();
 				$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
@@ -567,17 +585,21 @@ $(function () {
 				// キャンペーンのカウント
 				setSchoolSelectNum(10);
 
+				// 「願書あり」なら注意文言表示
+				checkGanshoAri();
+
 				// ボタンを「追加済み」に変更
 				setAddCartBtnState();
 
-				// ***QA no40*** 
+				// 20校を選択したら吸着に吹き出し表示
+				alertCartAddOver();
+
 				// カート追加API処理中フラグをOFF
 				isAddClipProcessing = false;
-			}).fail(() => {
-				// ***QA no40*** 
-				// エラーが返ってきた際、カート追加API処理中フラグをOFF
-				isAddClipProcessing = false;
-			});
+		}).fail(() => {
+			// エラーが返ってきた際、カート追加API処理中フラグをOFF
+			isAddClipProcessing = false;
+		});
 		// カートが0件の場合はアクションボタンを生成
 		if(!$('.actionGroupe').length){
 			actionBtnDefault();
@@ -625,7 +647,28 @@ $(function () {
 			s2.tl(this, 'o', 'Smatome_uncheck');
 		}
 		$('[data-type="selectSchoolCount"]').text(getCheckCountNew());
+
+		// 20校を選択したら吸着に吹き出し表示
+		alertCartAddOver();
 	});
+
+	// 20校を選択したら吸着に吹き出し表示
+	const alertCartAddOver = ()=>{
+		const maxSelectCount = 20;
+		if (getCheckCountNew() >= maxSelectCount) {
+			$('.js-overFlow').show();
+		} else {
+			$('.js-overFlow').hide();
+		}
+	}
+
+	// 吸着の吹き出しを非表示
+	const deleteCartAddOver = ()=>{
+		$('.js-overFlow').hide();
+	}
+
+	// 20校を選択したら吸着に吹き出し表示
+	alertCartAddOver();
 
 	// 資料請求選択ボタン用モーダル
 	class Modal {
@@ -654,7 +697,6 @@ $(function () {
 		bindEvents() {
 			// モーダルを開く
 			$(document).on('click', '[data-open-shiryoselect-modal=trigger]', (e) => {
-				// ***QA no39*** 
 				// ボタンが非活性状態の場合は何もしない
 				if($(e.currentTarget).hasClass('matometeButtonBox__panph--disabled')) {
 					return false;

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/css/swiper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.5.0/js/swiper.min.js"></script>
+</head>
+
+<body>
+<div class="container">
+    <div class="modal">
+        <div class="modal__inner">
+            <div class="visitHistory">
+                <ul class="visitHistory__list">
+                    <!-- <li class="visitHistory__listItem">
+                        <span class="visitHistory__btnDelete" data-btn="delete"></span>
+                        <ul class="visitHistory__listItemDetail">
+                            <li class="visitHistory__schoolData">
+                                <img src="https://dummyimage.com/120x100/ccc/fff.png" alt="" class="visitHistory__schoolImage">
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">日本大学</span>
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">工学部/機械工学科</span>
+                            </li>
+                            <li class="visitHistory__schoolData">福島県郡山市田村町徳定字中河原１番地</li>
+                            <li class="visitHistory__schoolData">JR東北新幹線・東北本線「郡山」駅</li>
+                            <li class="visitHistory__schoolData">166万円</li>
+                            <li class="visitHistory__schoolData">
+                                <a href="" class="visitHistory__btnAddCart">資料請求カート追加</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="visitHistory__listItem">
+                        <span class="visitHistory__btnDelete" data-btn="delete"></span>
+                        <ul class="visitHistory__listItemDetail">
+                            <li class="visitHistory__schoolData">
+                                <img src="https://dummyimage.com/120x100/ccc/fff.png" alt="" class="visitHistory__schoolImage">
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">かもめ大学</span>
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">工学部/機械工学科</span>
+                            </li>
+                            <li class="visitHistory__schoolData">福島県郡山市田村町徳定字中河原１番地</li>
+                            <li class="visitHistory__schoolData">JR東北新幹線・東北本線「郡山」駅・・</li>
+                            <li class="visitHistory__schoolData">166万円</li>
+                            <li class="visitHistory__schoolData">
+                                <a href="" class="visitHistory__btnAddCart">資料請求カート追加</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="visitHistory__listItem">
+                        <span class="visitHistory__btnDelete" data-btn="delete"></span>
+                        <ul class="visitHistory__listItemDetail">
+                            <li class="visitHistory__schoolData">
+                                <img src="https://dummyimage.com/120x100/ccc/fff.png" alt="" class="visitHistory__schoolImage">
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">カラス大学</span>
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">工学部/機械工学科</span>
+                            </li>
+                            <li class="visitHistory__schoolData">福島県郡山市田村町徳定字中河原１番地</li>
+                            <li class="visitHistory__schoolData">JR東北新幹線・東北本線「郡山」駅・・</li>
+                            <li class="visitHistory__schoolData">166万円</li>
+                            <li class="visitHistory__schoolData">
+                                <a href="" class="visitHistory__btnAddCart">資料請求カート追加</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="visitHistory__listItem">
+                        <span class="visitHistory__btnDelete" data-btn="delete"></span>
+                        <ul class="visitHistory__listItemDetail">
+                            <li class="visitHistory__schoolData">
+                                <img src="https://dummyimage.com/120x100/ccc/fff.png" alt="" class="visitHistory__schoolImage">
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">スズメ大学</span>
+                            </li>
+                            <li class="visitHistory__schoolData">
+                                <span class="visitHistory__name">工学部/機械工学科</span>
+                            </li>
+                            <li class="visitHistory__schoolData">福島県郡山市田村町徳定字中河原１番地</li>
+                            <li class="visitHistory__schoolData">JR東北新幹線・東北本線「郡山」駅・・</li>
+                            <li class="visitHistory__schoolData">166万円</li>
+                            <li class="visitHistory__schoolData">
+                                <a href="" class="visitHistory__btnAddCart">資料請求カート追加</a>
+                            </li>
+                        </ul>
+                    </li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="btnWrapper">
+        <div class="btn" data-modal="open">閲覧した学部・学科を見る</div>
+    </div>
+</div>
+    
+<script>
+    var visitSchoolData = [
+        {
+            gakkoCd: 'SC000493',
+            gakkoNm: 'ええええ',
+            gakubuGakkaNm: '工学部/機械工学科',
+            address: '福島県郡山市田村町徳定字中河原１番地',
+            closestStation: 'JR東北新幹線・東北本線「郡山」駅',
+            gakuhi: '166万円',
+            expire: ''
+        }
+        // {
+        //     gakkoCd: 'SC000494',
+        //     gakkoNm: 'ううう',
+        //     gakubuGakkaNm: '工学部',
+        //     address: '福島県郡山市田村町徳定字中河原１番地',
+        //     closestStation: 'JR東北新幹線・東北本線「郡山」駅',
+        //     gakuhi: '166万円',
+        //     expire: ''
+        // },
+        // {
+        //     gakkoCd: 'SC000494',
+        //     gakkoNm: 'えええ',
+        //     gakubuGakkaNm: '工学部',
+        //     address: '福島県郡山市田村町徳定字中河原１番地',
+        //     closestStation: 'JR東北新幹線・東北本線「郡山」駅',
+        //     gakuhi: '166万円',
+        //     expire: ''
+        // }
+    ]
+</script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>
